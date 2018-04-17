@@ -1,54 +1,10 @@
-# Computes transit timing variations to linear order
-# in eccentricity.  Please cite Agol & Deck (2015) if
-# you make use of this in published research.
-#forked by Noah Tuchow
+#modifying TTVFaster functions for efficiency
 
-module TTVFaster
+#include("../TTVFaster-noah/Julia/compute_ttv.jl")
+#include("alt_ttv_succinct.jl")
+#using ForwardDiff
+#import TTVFaster.Planet_plane_hk
 
-VERSION < v"0.4-dev" && using Docile
-
-export Planet_plane_hk, compute_ttv!,compute_inner_ttv!,compute_outer_ttv!
-export Planet_plane                   # Deprecated, only exported to make the error message work
-
-include("ttv_succinct.jl")
-
-include("laplace_coefficients_initialize.jl")
-laplace_coefficients_initialize(jmax::Integer,alpha::Number) = LaplaceCoefficients.initialize(jmax,alpha)
-export laplace_coefficients_initialize
-
-immutable Planet_plane
-# Parameters of a planet in a plane-parallel system
-  # Mass ratio of the planet to the star:
-  mass_ratio :: Float64
-  # Initial time of transit:
-  period   :: Float64
-  trans0   :: Float64
-  eccen    :: Float64
-# longitude of periastron measured from line of sight, in radians:
-  omega    :: Float64
-end
-
-type Planet_plane_hk{T<:Number} # Parameters of a planet in a plane-parallel system
-  # Mass ratio of the planet to the star:
-  mass_ratio :: T
-  # Initial time of transit:
-  period   :: T
-  trans0   :: T
-  # e times cos or sin of longitude of periastron measured from line of sight, in radians:
-  ecosw    :: T
-  esinw    :: T
-end
-
-include("TTVFasterFunctions.jl") #includes inner and outer ttv functions
-
-"""
-# Error message to explain to anyone who tries to use the old version
-"""
-function compute_ttv!(jmax::Integer,p1::Planet_plane,p2::Planet_plane,time1::Vector,time2::Vector,ttv1::Vector,ttv2::Vector,f1::Array,f2::Array,b::Array,alpha0::Number,b0::Array)
-  error("The Planet_plane data structure has been deprecated in favor of Planet_plane_hk")
-end
-
-"""
 # Computes transit-timing variations to linear order in
 # eccentricity for non-resonant, plane-parallel planets.
 # Input:
@@ -65,16 +21,18 @@ end
 #     f1: TTV coefficients for inner planet
 #     f2: TTV coefficients for outer planet
 #      b: Laplace coefficients (& derivatives) for outer planet
-"""
-function compute_ttv!(jmax::Integer,p1::Planet_plane_hk,p2::Planet_plane_hk,time1::Vector,time2::Vector,ttv1::Vector,ttv2::Vector,f1::Array,f2::Array,b::Array,alpha0::Number,b0::Array)
 
+function compute_inner_ttv!(jmax::Integer, p1::TTVFaster.Planet_plane_hk, p2::TTVFaster.Planet_plane_hk, time1::Vector, ttv1::Vector,f1::Array,f2::Array,b::Array,alpha0::Number,b0::Array)
+#works when tested
 # Compute the semi-major axis ratio of the planets:
-# println(p1.period,p2.period)
 const alpha = abs(p1.period/p2.period)^(2//3)  # Julia supports rational numbers!
 # Number of times:
 const ntime1 = length(time1)
-const ntime2 = length(time2)
+#const ntime2 = length(time2)
 # Compute the coefficients:
+#if typeof(alpha)==ForwardDiff.Dual
+#  alpha=alpha.value
+#end
 ttv_succinct!(jmax+1,alpha,f1,f2,b,alpha0,b0)  # I need to compute coefficients one higher than jmax
 # Compute TTVs for inner planet (equation 33):
 # Compute since of \pomegas:
@@ -121,6 +79,35 @@ lam20=-n2*p2.trans0 + 2*p2.esinw # 2*p2.eccen*sin2om
 # Multiply by period and mass ratio, and divide by 2*Pi:
   ttv1[i] = ttv1[i]*p1.period*p2.mass_ratio/(2pi)
 end
+# Finished!
+return
+end
+
+function compute_outer_ttv!(jmax::Integer,p1::TTVFaster.Planet_plane_hk,p2::TTVFaster.Planet_plane_hk,time2::Vector,ttv2::Vector,f1::Array,f2::Array,b::Array,alpha0::Number,b0::Array)
+#works when tested
+# Compute the semi-major axis ratio of the planets:
+# println(p1.period,p2.period)
+const alpha = abs(p1.period/p2.period)^(2//3)  # Julia supports rational numbers!
+# Number of times:
+#const ntime1 = length(time1)
+const ntime2 = length(time2)
+# Compute the coefficients:
+ttv_succinct!(jmax+1,alpha,f1,f2,b,alpha0,b0)  # I need to compute coefficients one higher than jmax
+# Compute TTVs for inner planet (equation 33):
+# Compute since of \pomegas:
+e1 = sqrt(p1.esinw*p1.esinw+p1.ecosw*p1.ecosw)
+e2 = sqrt(p2.esinw*p2.esinw+p2.ecosw*p2.ecosw)
+sin1om=p1.esinw/e1
+sin2om=p2.esinw/e2
+cos1om=p1.ecosw/e1
+cos2om=p2.ecosw/e2
+# Compute mean motions:
+n1=2pi/p1.period
+n2=2pi/p2.period
+# Compute initial longitudes:
+lam10=-n1*p1.trans0 + 2*p1.esinw # 2*p1.eccen*sin1om
+lam20=-n2*p2.trans0 + 2*p2.esinw # 2*p2.eccen*sin2om
+
 # Compute TTVs for outer planet (equation 33):
 @inbounds for i=1:ntime2
 # Compute the longitudes of the planets at times of transit of planet 2:
@@ -155,6 +142,4 @@ end
 end
 # Finished!
 return
-end  # compute_ttv!
-
-end # module
+end
