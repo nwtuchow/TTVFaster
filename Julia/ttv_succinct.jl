@@ -2,16 +2,22 @@
 # solution from Agol & Deck (2015).  Please cite this paper
 # if you make use of this in your research.
 
-u{T<:Number}(gamma::T,c1::T,c2::T)= ((3+gamma*gamma)*c1+2*gamma*c2)/(gamma*gamma*(1-gamma*gamma))
+u{T1<:Number, T2<:Number}(gamma::T1,c1::T2,c2::T2)= ((3+gamma*gamma)*c1+2*gamma*c2)/(gamma*gamma*(1-gamma*gamma))
 # m=+/-1
-v{T<:Number}(z::T,d1::T,d2::T,m::Integer)= ((m*(1-z*z)+6*z)*d1+(2+z*z)*d2)/(z*(1-z*z)*(z+m)*(z+2*m))
+v{T1<:Number,T2<:Number}(z::T1,d1::T2,d2::T2,m::Integer)= ((m*(1-z*z)+6*z)*d1+(2+z*z)*d2)/(z*(1-z*z)*(z+m)*(z+2*m))
 
-function ttv_succinct!(jmax::Integer,alpha::Number,f1::Array{Float64,2},f2::Array{Float64,2},b::Array{Float64,2},alpha0::Number,b0::Array{Float64,2})
+function ttv_succinct!{T1<:Number,T2<:Number}(jmax::Integer,alpha::Number,f1::Array{T1,2},f2::Array{T1,2},b::Array{T1,2},alpha0::Number,b0::Array{T2,2})
 
+#(jmax::Integer,alpha::Number,f1::Array{Float64,2},f2::Array{Float64,2},b::Array{Float64,2},alpha0::Number,b0::Array{Float64,2})
 # See simple_solution.pdf 7/16/2015
 
 # Fourth-order Taylor expansion approximation of Laplace coefficients:
 dalpha = alpha-alpha0
+
+"""println("\ndalpha: ", typeof(dalpha))
+println("\nb0: ", typeof(b0))
+println("\nb: ", typeof(b))"""
+
 for i=0:2
   for j=0:jmax
     b[j+1,i+1]=b0[i+1,j+1]+dalpha*(b0[i+2,j+1]+0.5*dalpha*(b0[i+3,j+1]+dalpha/3.0*(b0[i+4,j+1]+dalpha*0.25*b0[i+5,j+1])))
@@ -83,5 +89,5 @@ sqrtalpha = sqrt(alpha)
   end
 # That's it!
 end
-return 
+return
 end
