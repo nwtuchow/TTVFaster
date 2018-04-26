@@ -22,7 +22,7 @@
 #     f2: TTV coefficients for outer planet
 #      b: Laplace coefficients (& derivatives) for outer planet
 
-function compute_inner_ttv!(jmax::Integer, p1::TTVFaster.Planet_plane_hk, p2::TTVFaster.Planet_plane_hk, time1::Vector, ttv1::Vector,f1::Array,f2::Array,b::Array,alpha0::Number,b0::Array)
+function compute_inner_ttv!{T1<:Number}(jmax::Integer, p1::Planet_plane_hk{T1}, p2::Planet_plane_hk{T1}, time1::Vector, ttv1::Vector,f1::Array,f2::Array,b::Array,alpha0::Number,b0::Array)
 #works when tested
 # Compute the semi-major axis ratio of the planets:
 const alpha = abs(p1.period/p2.period)^(2//3)  # Julia supports rational numbers!
@@ -83,7 +83,7 @@ end
 return
 end
 
-function compute_outer_ttv!(jmax::Integer,p1::TTVFaster.Planet_plane_hk,p2::TTVFaster.Planet_plane_hk,time2::Vector,ttv2::Vector,f1::Array,f2::Array,b::Array,alpha0::Number,b0::Array)
+function compute_outer_ttv!{T1<:Number}(jmax::Integer,p1::Planet_plane_hk{T1},p2::Planet_plane_hk{T1},time2::Vector,ttv2::Vector,f1::Array,f2::Array,b::Array,alpha0::Number,b0::Array)
 #works when tested
 # Compute the semi-major axis ratio of the planets:
 # println(p1.period,p2.period)
