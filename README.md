@@ -1,5 +1,6 @@
 # TTVFaster
 First order eccentricity transit timing variations (TTVs) computed in [Agol &amp; Deck (2015)](http://arxiv.org/abs/1509.01623)
+Forked by Noah Tuchow, changing Julia functions to allow inputs of type ForwardDiff.dual
 
 This implements equation (33) from that paper by computing the Laplace
 coefficients using a series solution due to Jack Wisdom, computing
